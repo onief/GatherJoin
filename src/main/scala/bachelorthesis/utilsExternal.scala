@@ -12,8 +12,7 @@ object utilsExternal {
   type Var = String
 
   val projectRoot: String = Paths.get(".").toAbsolutePath.toString.init
-  //TODO: Add data root
-  val localDataRoot: String = ""
+  val localDataRoot: String = "/home/onief/Documents/Bachelorarbeit/NetCdfFiles/"
 
   def iagosLoadConfig(roundToClosestHour: Boolean): LoadConfig = {
     LoadConfig(

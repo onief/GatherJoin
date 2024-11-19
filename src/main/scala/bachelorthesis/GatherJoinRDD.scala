@@ -15,7 +15,8 @@ sealed trait ReadMode
 object ReadMode {
   final case object naive extends ReadMode
   final case object noDuplicates extends ReadMode
-  final case class cuboid(maxDistance: Double) extends ReadMode
+  // 'squaredEuclidean', ’manhattan’ or ’volume’
+  final case class cuboid(distanceMeasure: String, maxDistance: Double) extends ReadMode
 }
 
 /** Implementation of Gather Join
@@ -28,6 +29,18 @@ class GatherJoinRDD[V](dataToLoad: RDD[(FileName, Position, Seq[Var], V)],
   extends RDD[(FileName, Position, (Seq[Var], Seq[Double]), V)](dataToLoad) {
 
   private val hadoopConf = new Configuration(sparkContext.hadoopConfiguration) with Serializable
+
+  private val distanceMeasures: Map[String, (Position, Position) => Int] = Map(
+    "squaredEuclidean" -> squaredEuclideanDist,
+    "manhattan" -> manhattanDist,
+    "volume" -> manhattanDist
+  )
+
+  private val groupingMeasures: Map[String, (Position, Position) => Int] = Map(
+    "squaredEuclidean" -> squaredEuclideanDist,
+    "manhattan" -> manhattanDist,
+    "volume" -> volumeDist
+  )
 
   // Could be sped up by assuming FileName and/or Seq[Var] of one Partition to be identical
   override def compute(split: Partition, context: TaskContext): Iterator[(FileName, Position, (Seq[Var], Seq[Double]), V)] = {
@@ -65,7 +78,7 @@ class GatherJoinRDD[V](dataToLoad: RDD[(FileName, Position, Seq[Var], V)],
         // Don't load duplicated Positions from NcVariables
         case ReadMode.noDuplicates => noDuplicatesLoad(fileName, varMap)
         // Only load Cuboid Chunks of Volume MaxSize
-        case ReadMode.cuboid(maxSize) => cuboidLoad(fileName, varMap, maxSize)
+        case ReadMode.cuboid(distMeasure, maxSize) => cuboidLoad(fileName, varMap, distMeasure, maxSize)
       }
     }).toIterator
 
@@ -119,7 +132,7 @@ class GatherJoinRDD[V](dataToLoad: RDD[(FileName, Position, Seq[Var], V)],
     output
   }
 
-  private def cuboidLoad(fileName: FileName, varMap: Map[Seq[Var], Seq[(Position, V)]], maxDistance: Double): Iterable[(FileName, Position, (Seq[Var], Seq[Double]), V)] = {
+  private def cuboidLoad(fileName: FileName, varMap: Map[Seq[Var], Seq[(Position, V)]], groupMeasure: String, maxDistance: Double): Iterable[(FileName, Position, (Seq[Var], Seq[Double]), V)] = {
     val ncDataset = openNcDatasetInHDFS(fileName, hadoopConf)
 
     val output = varMap.keys.flatMap(variables => {
@@ -129,12 +142,12 @@ class GatherJoinRDD[V](dataToLoad: RDD[(FileName, Position, Seq[Var], V)],
 
       // Sort Positions by Distance to the minimal Position
       val minPos = createMinPosition(uniquePositions)
-      val sortedUniquePositions = uniquePositions.sortBy(pos => squaredEuclideanDist(pos, minPos))
+      val sortedUniquePositions = uniquePositions.sortBy(pos => distanceMeasures(groupMeasure)(pos, minPos))
       // Create logical Groupings/Cuboids to Load
       val cuboidGrouping: mutable.Buffer[mutable.Buffer[Position]] = sortedUniquePositions.tail
         .foldLeft(mutable.Buffer(mutable.Buffer(sortedUniquePositions.head)))((agg, pos) => {
           val groupIdx = agg.length - 1
-          if (squaredEuclideanDist(agg(groupIdx).head, pos) <= maxDistance) {
+          if (groupingMeasures(groupMeasure)(agg(groupIdx).head, pos) <= maxDistance) {
             agg(groupIdx).append(pos)
           } else {
             agg.append(mutable.Buffer(pos))

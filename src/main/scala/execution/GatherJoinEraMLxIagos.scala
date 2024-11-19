@@ -8,7 +8,7 @@ object GatherJoinEraMLxIagos {
 
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf()
-      .setAppName("EraMLGatherJoin")
+      .setAppName("TestApplication")
       .setMaster("local[*]")
 
     val sc = new SparkContext(conf)

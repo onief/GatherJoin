@@ -134,18 +134,18 @@ class GatherJoinTest extends AnyFunSuite with BeforeAndAfterAll {
   }
 
   test("Cuboid Gather Join (Volume = 10.0) yields correct results") {
-    testGatherJoin(ReadMode.cuboid(10.0))
+    testGatherJoin(ReadMode.cuboid("squaredEuclidean", 10.0))
   }
 
   test("Cuboid Gather Join (Volume = 50.0) yields correct results") {
-    testGatherJoin(ReadMode.cuboid(50.0))
+    testGatherJoin(ReadMode.cuboid("squaredEuclidean", 50.0))
   }
 
   test("Cuboid Gather Join (Volume = 100.0) yields correct results") {
-    testGatherJoin(ReadMode.cuboid(100.0))
+    testGatherJoin(ReadMode.cuboid("squaredEuclidean", 100.0))
   }
 
   test("Cuboid Gather Join (Volume = 500.0) yields correct results") {
-    testGatherJoin(ReadMode.cuboid(500.0))
+    testGatherJoin(ReadMode.cuboid("squaredEuclidean", 500.0))
   }
 }

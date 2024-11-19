@@ -8,7 +8,7 @@ object GatherJoinEraBxIagos {
 
   def main(args: Array[String]): Unit = {
     val conf = new SparkConf()
-      .setAppName("EraBGatherJoin")
+      .setAppName("TestApplication")
       .setMaster("local[*]")
 
     val sc = new SparkContext(conf)
@@ -19,7 +19,7 @@ object GatherJoinEraBxIagos {
     val iagosFiles: Seq[FileName] = Seq(localDataRoot + "IAGOS/IAGOS_timeseries_2019081509303904.nc")
 
     // Define IAGOS Variables you want to compare
-    // (lat an lon are needed for GatherJoin and need to be explicitly mentioned since they are no dimension variables)
+    // (lat and lon are needed for GatherJoin and need to be explicitly mentioned since they are no dimension variables)
     val iagosVariables: Seq[FileName] = Seq("lat", "lon", "air_speed_AC")
 
     // Define Meta Information about your ERA Files
@@ -42,7 +42,7 @@ object GatherJoinEraBxIagos {
         eraBGatherJoin(eraBasePath, eraFilePrefix, timeDouble, latitude, longitude, eraVariables, file, vars, vals)
       }}
     // Carry out the Join with the ReadMode of your choice
-    val join = new GatherJoinRDD[(FileName, Seq[Var], Seq[Double])](iagosMap, ReadMode.cuboid(350))
+    val join = new GatherJoinRDD[(FileName, Seq[Var], Seq[Double])](iagosMap, ReadMode.cuboid("manhattan", 350))
 
     //join.foreach(println)
     println(join.count())

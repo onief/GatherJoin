@@ -28,6 +28,15 @@ private[bachelorthesis] object utilsInternal {
     first.zip(second).map { case (x: Int, y: Int) => (x - y) * (x - y)}.sum
   }
 
+  def volumeDist(first: Position, second: Position): Int = {
+    // +1 to ensure that volume doesn't turn 0
+    first.zip(second).map { case (x: Int, y: Int) => math.abs(x - y) + 1}.product
+  }
+
+  def manhattanDist(first: Position, second: Position): Int = {
+    first.zip(second).map { case (x: Int, y: Int) => math.abs(x - y)}.sum
+  }
+
   def createMinPosition(positions: Seq[Position]): Position = {
     val dimension = positions.head.length
     val minPos = Array.fill(dimension)(0)
